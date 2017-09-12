@@ -1,11 +1,7 @@
 #!/bin/bash
- 
-
-# !!!  NOTE !!!!
-# we should put as first parameter the id of mongo container
 
 
-
+CONTAINER_ID=`sudo docker ps -a | grep mongo | cut -d " " -f1`
 MONGO_DATABASE="your_database_name"
 APP_NAME="your_app_name"
 MONGO_CONTAINER_DATABASE_PATH="path_where_you_exported_the_mongo_database_inside_container"
@@ -25,13 +21,17 @@ fi
 # mv $MONGO_DATABASE $BACKUP_NAME
 
 # export the database from the container 
-sudo docker exec -it $1 mongodump -d $MONGO_DATABASE -o $MONGO_CONTAINER_DATABASE_PATH
+sudo docker exec -it $CONTAINER_ID mongodump -d $MONGO_DATABASE -o $MONGO_CONTAINER_DATABASE_PATH
 
 # copy the exported database from outside the container 
-sudo docker cp $1:$MONGO_CONTAINER_DATABASE_PATH/$MONGO_DATABASE /mnt/backups/$APP_NAME
+sudo docker cp $CONTAINER_ID:$MONGO_CONTAINER_DATABASE_PATH/$MONGO_DATABASE /mnt/backups/$APP_NAME
 
 # rename it to the actual date 
 cd /mnt/backups/$APP_NAME
 mv $MONGO_DATABASE $BACKUP_NAME
+
+BUCKET="your_s3_bucket"
+# upload to s3 
+aws s3 sync $BACKUP_NAME s3://$BUCKET/$BACKUP_NAME --region us-east-1
 
 
